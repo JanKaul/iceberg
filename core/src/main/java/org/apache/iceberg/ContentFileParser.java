@@ -27,7 +27,7 @@ import java.util.Map;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.util.JsonUtil;
 
-class ContentFileParser {
+public class ContentFileParser {
   private static final String SPEC_ID = "spec-id";
   private static final String CONTENT = "content";
   private static final String FILE_PATH = "file-path";
@@ -45,6 +45,7 @@ class ContentFileParser {
   private static final String SPLIT_OFFSETS = "split-offsets";
   private static final String EQUALITY_IDS = "equality-ids";
   private static final String SORT_ORDER_ID = "sort-order-id";
+  private static final String FIRST_ROW_ID = "first-row-id";
   private static final String REFERENCED_DATA_FILE = "referenced-data-file";
   private static final String CONTENT_OFFSET = "content-offset";
   private static final String CONTENT_SIZE = "content-size-in-bytes";
@@ -55,12 +56,12 @@ class ContentFileParser {
     return partitionData != null && partitionData.size() > 0;
   }
 
-  static String toJson(ContentFile<?> contentFile, PartitionSpec spec) {
+  public static String toJson(ContentFile<?> contentFile, PartitionSpec spec) {
     return JsonUtil.generate(
         generator -> ContentFileParser.toJson(contentFile, spec, generator), false);
   }
 
-  static void toJson(ContentFile<?> contentFile, PartitionSpec spec, JsonGenerator generator)
+  public static void toJson(ContentFile<?> contentFile, PartitionSpec spec, JsonGenerator generator)
       throws IOException {
     Preconditions.checkArgument(contentFile != null, "Invalid content file: null");
     Preconditions.checkArgument(spec != null, "Invalid partition spec: null");
@@ -112,6 +113,8 @@ class ContentFileParser {
       generator.writeNumberField(SORT_ORDER_ID, contentFile.sortOrderId());
     }
 
+    JsonUtil.writeLongFieldIfPresent(FIRST_ROW_ID, contentFile.firstRowId(), generator);
+
     if (contentFile instanceof DeleteFile) {
       DeleteFile deleteFile = (DeleteFile) contentFile;
 
@@ -131,13 +134,18 @@ class ContentFileParser {
     generator.writeEndObject();
   }
 
-  static ContentFile<?> fromJson(JsonNode jsonNode, PartitionSpec spec) {
+  public static ContentFile<?> fromJson(JsonNode jsonNode, PartitionSpec spec) {
+    return fromJson(jsonNode, spec == null ? null : Map.of(spec.specId(), spec));
+  }
+
+  public static ContentFile<?> fromJson(JsonNode jsonNode, Map<Integer, PartitionSpec> specsById) {
     Preconditions.checkArgument(jsonNode != null, "Invalid JSON node for content file: null");
     Preconditions.checkArgument(
         jsonNode.isObject(), "Invalid JSON node for content file: non-object (%s)", jsonNode);
-    Preconditions.checkArgument(spec != null, "Invalid partition spec: null");
-
+    Preconditions.checkArgument(specsById != null, "Invalid partition spec: null");
     int specId = JsonUtil.getInt(SPEC_ID, jsonNode);
+    PartitionSpec spec = specsById.get(specId);
+    Preconditions.checkArgument(spec != null, "Invalid partition specId: %s", specId);
     FileContent fileContent = FileContent.valueOf(JsonUtil.getString(CONTENT, jsonNode));
     String filePath = JsonUtil.getString(FILE_PATH, jsonNode);
     FileFormat fileFormat = FileFormat.fromString(JsonUtil.getString(FILE_FORMAT, jsonNode));
@@ -164,6 +172,7 @@ class ContentFileParser {
     List<Long> splitOffsets = JsonUtil.getLongListOrNull(SPLIT_OFFSETS, jsonNode);
     int[] equalityFieldIds = JsonUtil.getIntArrayOrNull(EQUALITY_IDS, jsonNode);
     Integer sortOrderId = JsonUtil.getIntOrNull(SORT_ORDER_ID, jsonNode);
+    Long firstRowId = JsonUtil.getLongOrNull(FIRST_ROW_ID, jsonNode);
     String referencedDataFile = JsonUtil.getStringOrNull(REFERENCED_DATA_FILE, jsonNode);
     Long contentOffset = JsonUtil.getLongOrNull(CONTENT_OFFSET, jsonNode);
     Long contentSizeInBytes = JsonUtil.getLongOrNull(CONTENT_SIZE, jsonNode);
@@ -178,7 +187,8 @@ class ContentFileParser {
           metrics,
           keyMetadata,
           splitOffsets,
-          sortOrderId);
+          sortOrderId,
+          firstRowId);
     } else {
       return new GenericDeleteFile(
           specId,
