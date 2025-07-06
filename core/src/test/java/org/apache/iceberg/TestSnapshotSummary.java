@@ -21,19 +21,12 @@ package org.apache.iceberg;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ParameterizedTestExtension.class)
 public class TestSnapshotSummary extends TestBase {
-
-  @Parameters(name = "formatVersion = {0}")
-  protected static List<Object> parameters() {
-    return Arrays.asList(1, 2, 3);
-  }
 
   @TestTemplate
   public void testFileSizeSummary() {
@@ -108,7 +101,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(11)
+        .hasSize(14)
         .containsEntry(SnapshotSummary.ADDED_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_FILE_SIZE_PROP, "10")
         .containsEntry(SnapshotSummary.ADDED_RECORDS_PROP, "1")
@@ -118,7 +111,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "10")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "0");
   }
 
   @TestTemplate
@@ -133,7 +129,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(11)
+        .hasSize(14)
         .containsEntry(SnapshotSummary.ADDED_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_FILE_SIZE_PROP, "10")
         .containsEntry(SnapshotSummary.ADDED_RECORDS_PROP, "1")
@@ -143,7 +139,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "10")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "0");
   }
 
   @TestTemplate
@@ -162,7 +161,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(14)
+        .hasSize(17)
         .containsEntry(SnapshotSummary.ADDED_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_FILE_SIZE_PROP, "10")
         .containsEntry(SnapshotSummary.ADDED_RECORDS_PROP, "1")
@@ -175,7 +174,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "10")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "2")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "1");
   }
 
   @TestTemplate
@@ -194,7 +196,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(11)
+        .hasSize(14)
         .containsEntry(SnapshotSummary.CHANGED_PARTITION_COUNT_PROP, "2")
         .containsEntry(SnapshotSummary.DELETED_FILES_PROP, "2")
         .containsEntry(SnapshotSummary.DELETED_RECORDS_PROP, "2")
@@ -204,7 +206,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "0")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "0");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "0")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "1");
   }
 
   @TestTemplate
@@ -219,7 +224,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(12)
+        .hasSize(15)
         .containsEntry(SnapshotSummary.ADDED_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_FILE_SIZE_PROP, "10")
         .containsEntry(SnapshotSummary.ADDED_RECORDS_PROP, "1")
@@ -230,7 +235,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "10")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "0");
   }
 
   @TestTemplate
@@ -245,7 +253,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(11)
+        .hasSize(14)
         .containsEntry(SnapshotSummary.ADDED_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_FILE_SIZE_PROP, "10")
         .containsEntry(SnapshotSummary.ADDED_RECORDS_PROP, "1")
@@ -255,7 +263,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "10")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "0");
   }
 
   @TestTemplate
@@ -274,7 +285,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(14)
+        .hasSize(17)
         .containsEntry(SnapshotSummary.ADDED_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_DELETE_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_FILE_SIZE_PROP, "20") // size of data + delete file
@@ -287,7 +298,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "1")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "20")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "2")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "0");
   }
 
   @TestTemplate
@@ -307,7 +321,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(14)
+        .hasSize(17)
         .containsEntry(SnapshotSummary.ADDED_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_FILE_SIZE_PROP, "10")
         .containsEntry(SnapshotSummary.ADDED_RECORDS_PROP, "1")
@@ -320,7 +334,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "10")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "2")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0");
   }
 
   @TestTemplate
@@ -341,7 +358,7 @@ public class TestSnapshotSummary extends TestBase {
         .commit();
 
     assertThat(table.currentSnapshot().summary())
-        .hasSize(16)
+        .hasSize(19)
         .containsEntry(SnapshotSummary.ADDED_DELETE_FILES_PROP, "1")
         .containsEntry(SnapshotSummary.ADDED_FILE_SIZE_PROP, "10")
         .containsEntry(SnapshotSummary.ADD_POS_DELETE_FILES_PROP, "1")
@@ -356,7 +373,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "1")
         .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "20")
-        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1");
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "2")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "1");
   }
 
   @TestTemplate
@@ -375,7 +395,7 @@ public class TestSnapshotSummary extends TestBase {
     long totalPosDeletes1 = dv1.recordCount() + dv2.recordCount();
     long totalFileSize1 = dv1.contentSizeInBytes() + dv2.contentSizeInBytes();
     assertThat(summary1)
-        .hasSize(12)
+        .hasSize(15)
         .doesNotContainKey(SnapshotSummary.ADD_POS_DELETE_FILES_PROP)
         .doesNotContainKey(SnapshotSummary.REMOVED_POS_DELETE_FILES_PROP)
         .containsEntry(SnapshotSummary.ADDED_DELETE_FILES_PROP, "1")
@@ -392,7 +412,10 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_DATA_FILES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "0")
-        .containsEntry(SnapshotSummary.CHANGED_PARTITION_COUNT_PROP, "1");
+        .containsEntry(SnapshotSummary.CHANGED_PARTITION_COUNT_PROP, "1")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "0");
 
     DeleteFile dv3 = newDV(FILE_A);
     table
@@ -411,7 +434,7 @@ public class TestSnapshotSummary extends TestBase {
     long totalPosDeletes2 = dv3.recordCount();
     long totalFileSize2 = dv3.contentSizeInBytes();
     assertThat(summary2)
-        .hasSize(16)
+        .hasSize(19)
         .doesNotContainKey(SnapshotSummary.ADD_POS_DELETE_FILES_PROP)
         .doesNotContainKey(SnapshotSummary.REMOVED_POS_DELETE_FILES_PROP)
         .containsEntry(SnapshotSummary.ADDED_DELETE_FILES_PROP, "1")
@@ -428,6 +451,34 @@ public class TestSnapshotSummary extends TestBase {
         .containsEntry(SnapshotSummary.TOTAL_DATA_FILES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
         .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "0")
-        .containsEntry(SnapshotSummary.CHANGED_PARTITION_COUNT_PROP, "2");
+        .containsEntry(SnapshotSummary.CHANGED_PARTITION_COUNT_PROP, "2")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "3")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "2");
+  }
+
+  @TestTemplate
+  public void rewriteManifestsWithDuplicateFiles() {
+    assertThat(listManifestFiles()).isEmpty();
+
+    table.newAppend().appendFile(FILE_A).commit();
+    table.newAppend().appendFile(FILE_B).commit();
+    table.newAppend().appendFile(FILE_C).commit();
+
+    table.rewriteManifests().clusterBy(file -> "file").rewriteIf(ignored -> true).commit();
+
+    assertThat(table.currentSnapshot().summary())
+        .hasSize(12)
+        .containsEntry(SnapshotSummary.CHANGED_PARTITION_COUNT_PROP, "0")
+        .containsEntry(SnapshotSummary.TOTAL_DATA_FILES_PROP, "3")
+        .containsEntry(SnapshotSummary.TOTAL_DELETE_FILES_PROP, "0")
+        .containsEntry(SnapshotSummary.TOTAL_EQ_DELETES_PROP, "0")
+        .containsEntry(SnapshotSummary.TOTAL_POS_DELETES_PROP, "0")
+        .containsEntry(SnapshotSummary.TOTAL_FILE_SIZE_PROP, "30")
+        .containsEntry(SnapshotSummary.TOTAL_RECORDS_PROP, "3")
+        .containsEntry(SnapshotSummary.PROCESSED_MANIFEST_ENTRY_COUNT, "3")
+        .containsEntry(SnapshotSummary.CREATED_MANIFESTS_COUNT, "1")
+        .containsEntry(SnapshotSummary.KEPT_MANIFESTS_COUNT, "0")
+        .containsEntry(SnapshotSummary.REPLACED_MANIFESTS_COUNT, "3");
   }
 }

@@ -1704,7 +1704,12 @@ public class TestMetadataTableScans extends MetadataTableScanTestBase {
     table.newRowDelta().addDeletes(delete1).addDeletes(delete2).commit();
 
     PositionDeletesTable positionDeletesTable = new PositionDeletesTable(table);
-    assertThat(TypeUtil.indexById(positionDeletesTable.schema().asStruct()).size()).isEqualTo(2010);
+    int expectedIds =
+        formatVersion >= 3
+            ? 2012 // partition col + 8 columns + 2003 ids inside the deleted row column
+            : 2010; // partition col + 6 columns + 2003 ids inside the deleted row column
+    assertThat(TypeUtil.indexById(positionDeletesTable.schema().asStruct()).size())
+        .isEqualTo(expectedIds);
 
     BatchScan scan = positionDeletesTable.newBatchScan();
     assertThat(scan).isInstanceOf(PositionDeletesTable.PositionDeletesBatchScan.class);
@@ -1747,13 +1752,90 @@ public class TestMetadataTableScans extends MetadataTableScanTestBase {
     assertEstimatedRowCount(new AllEntriesTable(table), 4);
   }
 
+  @TestTemplate
+  public void testMetadataTableScansOnBranch() throws IOException {
+    table.newFastAppend().appendFile(FILE_A).commit();
+    table.manageSnapshots().createBranch("testBranch").commit();
+    table.newFastAppend().appendFile(FILE_B).commit();
+
+    Table entriesTable = new ManifestEntriesTable(table);
+    assertThat(
+            rowCount(
+                entriesTable
+                    .newScan()
+                    .useRef("testBranch")
+                    .select("status")
+                    .filter(Expressions.lessThan("data_file.partition.data_bucket", 0))))
+        .as("ManifestEntriesTable on branch should have no entry satisfying the filter")
+        .isEqualTo(0);
+    assertThat(rowCount(entriesTable.newScan()))
+        .as("ManifestEntriesTable on main should have 2 entries")
+        .isEqualTo(2);
+
+    Table dataFilesTable = new DataFilesTable(table);
+    assertThat(rowCount(dataFilesTable.newScan().useRef("testBranch")))
+        .as("DataFilesTable on branch should have 1 file")
+        .isEqualTo(1);
+    assertThat(rowCount(dataFilesTable.newScan()))
+        .as("DataFilesTable on main should have 2 files")
+        .isEqualTo(2);
+
+    Table manifestsTable = new ManifestsTable(table);
+    assertThat(rowCount(manifestsTable.newScan().useRef("testBranch")))
+        .as("ManifestsTable on branch should have 1 manifest")
+        .isEqualTo(1);
+    assertThat(rowCount(manifestsTable.newScan()))
+        .as("ManifestsTable on main should have 2 manifests")
+        .isEqualTo(2);
+
+    Table filesTable = new FilesTable(table);
+    assertThat(rowCount(filesTable.newScan().useRef("testBranch")))
+        .as("FilesTable on branch should have 1 file")
+        .isEqualTo(1);
+    assertThat(rowCount(filesTable.newScan()))
+        .as("FilesTable on main should have 2 files")
+        .isEqualTo(2);
+  }
+
+  @TestTemplate
+  public void testDeleteFilesTableScanOnBranch() throws IOException {
+    assumeThat(formatVersion).as("Delete files are not supported by V1 Tables").isGreaterThan(1);
+
+    table.newFastAppend().appendFile(FILE_A).commit();
+    table.newRowDelta().addDeletes(fileADeletes()).commit();
+    table.manageSnapshots().createBranch("testBranch").commit();
+    table.newFastAppend().appendFile(FILE_B).commit();
+    table.newRowDelta().addDeletes(fileBDeletes()).commit();
+
+    Table deleteFilesTable = new DeleteFilesTable(table);
+    assertThat(rowCount(deleteFilesTable.newScan().useRef("testBranch")))
+        .as("DeleteFilesTable on branch should have 1 delete file")
+        .isEqualTo(1);
+    assertThat(rowCount(deleteFilesTable.newScan()))
+        .as("DeleteFilesTable on main should have 2 delete files")
+        .isEqualTo(2);
+  }
+
+  private int rowCount(TableScan scan) throws IOException {
+    int count = 0;
+    try (CloseableIterable<FileScanTask> tasks = scan.planFiles()) {
+      for (FileScanTask task : tasks) {
+        try (CloseableIterable<StructLike> rows = task.asDataTask().rows()) {
+          count += Iterators.size(rows.iterator());
+        }
+      }
+    }
+    return count;
+  }
+
   private void assertEstimatedRowCount(Table metadataTable, int size) throws Exception {
     TableScan scan = metadataTable.newScan();
 
     try (CloseableIterable<FileScanTask> tasks = scan.planFiles()) {
       List<FileScanTask> taskList = Lists.newArrayList(tasks);
-      assertThat(taskList.size()).isGreaterThan(0);
-      taskList.forEach(task -> assertThat(task.estimatedRowsCount()).isEqualTo(size));
+      assertThat(taskList)
+          .isNotEmpty()
+          .allSatisfy(task -> assertThat(task.estimatedRowsCount()).isEqualTo(size));
     }
   }
 }

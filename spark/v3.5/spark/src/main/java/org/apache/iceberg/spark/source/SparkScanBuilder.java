@@ -49,6 +49,7 @@ import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.metrics.InMemoryMetricsReporter;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
+import org.apache.iceberg.relocated.com.google.common.collect.ImmutableSet;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.relocated.com.google.common.collect.Sets;
 import org.apache.iceberg.spark.Spark3Util;
@@ -70,6 +71,7 @@ import org.apache.spark.sql.connector.read.Scan;
 import org.apache.spark.sql.connector.read.ScanBuilder;
 import org.apache.spark.sql.connector.read.Statistics;
 import org.apache.spark.sql.connector.read.SupportsPushDownAggregates;
+import org.apache.spark.sql.connector.read.SupportsPushDownLimit;
 import org.apache.spark.sql.connector.read.SupportsPushDownRequiredColumns;
 import org.apache.spark.sql.connector.read.SupportsPushDownV2Filters;
 import org.apache.spark.sql.connector.read.SupportsReportStatistics;
@@ -84,11 +86,11 @@ public class SparkScanBuilder
         SupportsPushDownAggregates,
         SupportsPushDownV2Filters,
         SupportsPushDownRequiredColumns,
-        SupportsReportStatistics {
+        SupportsReportStatistics,
+        SupportsPushDownLimit {
 
   private static final Logger LOG = LoggerFactory.getLogger(SparkScanBuilder.class);
   private static final Predicate[] NO_PREDICATES = new Predicate[0];
-  private StructType pushedAggregateSchema;
   private Scan localScan;
 
   private final SparkSession spark;
@@ -102,6 +104,7 @@ public class SparkScanBuilder
   private boolean caseSensitive;
   private List<Expression> filterExpressions = null;
   private Predicate[] pushedPredicates = NO_PREDICATES;
+  private Integer limit = null;
 
   SparkScanBuilder(
       SparkSession spark,
@@ -255,7 +258,7 @@ public class SparkScanBuilder
       return false;
     }
 
-    pushedAggregateSchema =
+    StructType pushedAggregateSchema =
         SparkSchemaUtil.convert(new Schema(aggregateEvaluator.resultType().fields()));
     InternalRow[] pushedAggregateRows = new InternalRow[1];
     StructLike structLike = aggregateEvaluator.result();
@@ -381,7 +384,7 @@ public class SparkScanBuilder
     AtomicInteger nextId = new AtomicInteger();
     return new Schema(
         metaColumnFields,
-        table.schema().identifierFieldIds(),
+        ImmutableSet.of(),
         oldId -> {
           if (!idsToReassign.contains(oldId)) {
             return oldId;
@@ -561,14 +564,11 @@ public class SparkScanBuilder
 
     boolean emptyScan = false;
     if (startTimestamp != null) {
-      if (table.currentSnapshot() != null
-          && table.currentSnapshot().timestampMillis() < startTimestamp) {
+      if (table.currentSnapshot() == null
+          || startTimestamp > table.currentSnapshot().timestampMillis()) {
         emptyScan = true;
       }
       startSnapshotId = getStartSnapshotId(startTimestamp);
-      if (startSnapshotId == null && endTimestamp == null) {
-        emptyScan = true;
-      }
     }
 
     if (endTimestamp != null) {
@@ -742,6 +742,10 @@ public class SparkScanBuilder
               TableProperties.SPLIT_OPEN_FILE_COST, String.valueOf(splitOpenFileCost));
     }
 
+    if (null != limit) {
+      configuredScan = configuredScan.minRowsRequested(limit.longValue());
+    }
+
     return configuredScan;
   }
 
@@ -756,10 +760,16 @@ public class SparkScanBuilder
   }
 
   private BatchScan newBatchScan() {
-    if (table instanceof BaseTable && readConf.distributedPlanningEnabled()) {
+    if (readConf.distributedPlanningEnabled()) {
       return new SparkDistributedDataScan(spark, table, readConf);
     } else {
       return table.newBatchScan();
     }
+  }
+
+  @Override
+  public boolean pushLimit(int pushedLimit) {
+    this.limit = pushedLimit;
+    return true;
   }
 }
